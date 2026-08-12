@@ -52,7 +52,7 @@
   
   .mini-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 6px; }
   .mini-table th { background: #f1f5f9; color: #64748b; padding: 5px 4px; border: 1px solid #e2e8f0; text-align: center; }
-  .mini-table td { padding: 5px 4px; border: 1px solid #f1f5f9; text-align: center; }
+  .mini-table td { padding: 5px 4px; border: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
 
   /* メンバーごとのサマリー行カラー */
   .row-bayami { background: #faf5ff; }
@@ -313,10 +313,9 @@ function calculate() {
     });
   }
 
-  // スクショ用明細一覧（日付順ソート機能つき）
+  // スクショ用明細一覧（1行表示 ＆ 円(外貨)形式）
   const miniList = document.getElementById('miniDetailsList');
   if(document.getElementById('showDetails').checked) {
-    // 日付順にソート（DAYS配列のインデックス順に比較）
     let sortedItems = [...items].sort((a, b) => {
       let idxA = DAYS.indexOf(a.day || "-");
       let idxB = DAYS.indexOf(b.day || "-");
@@ -337,11 +336,19 @@ function calculate() {
       let excluded = MEMBERS.filter(m => !targets.includes(m));
       let excludedStr = excluded.length > 0 ? excluded.map(e => MEMBERS_INFO.find(mi => mi.full === e).short).join(',') : '-';
       
+      let amtDisplay = "";
+      if (it.curr === 'FX') {
+        let yenVal = Math.round(it.amount * fxRate);
+        amtDisplay = `¥${yenVal.toLocaleString()} (${Number(it.amount).toLocaleString()}外貨)`;
+      } else {
+        amtDisplay = `¥${Math.round(it.amount).toLocaleString()}`;
+      }
+      
       html += `<tr class="${mInfo.rowClass}">
         <td>${it.day||'-'}</td>
         <td class="${mInfo.textClass}">${it.who}</td>
         <td style="text-align:left; padding-left:4px;">${it.place||'-'}</td>
-        <td style="text-align:right; padding-right:4px;">¥${Math.round(it.amount).toLocaleString()}</td>
+        <td style="text-align:right; padding-right:4px;">${amtDisplay}</td>
         <td style="color:#ef4444; font-weight:bold;">${excludedStr}</td>
       </tr>`;
     });
@@ -354,16 +361,18 @@ function calculate() {
 
 function addItem() {
   let defaultDay = "-";
+  let defaultCurr = "JPY";
   let defaultTargets = [...MEMBERS];
   if (items.length > 0) {
     const lastItem = items[items.length - 1];
     if (lastItem) {
       if (lastItem.day) defaultDay = lastItem.day;
+      if (lastItem.curr) defaultCurr = lastItem.curr;
       if (lastItem.targets) defaultTargets = [...lastItem.targets];
     }
   }
 
-  items.push({ id: Date.now(), day: defaultDay, who: "ばやみ", place: "", amount: 0, curr: "JPY", targets: defaultTargets });
+  items.push({ id: Date.now(), day: defaultDay, who: "ばやみ", place: "", amount: 0, curr: defaultCurr, targets: defaultTargets });
   renderRows();
   saveAndCalc();
 }
